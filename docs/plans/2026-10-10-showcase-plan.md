@@ -14,7 +14,7 @@
 - 종목 이름은 **표본**(실제 보유 공개 안 함). 한국 12: 삼성전자 005930 · SK하이닉스 000660 · 현대차 005380 · 기아 000270 · NAVER 035420 · 카카오 035720 · LG에너지솔루션 373220 · 셀트리온 068270 · KB금융 105560 · POSCO홀딩스 005490 · KODEX 200 069500 · TIGER 미국S&P500 360750.
   미국 8: AAPL · MSFT · NVDA · GOOGL · AMZN · TSLA · SPY · QQQ. 코인 3: BTC · ETH · SOL.
   보유 밖 종목(후보 표·시나리오 종목 등)용 **2차 풀** 약 40개(한화에어로스페이스 · 두산에너빌리티 · LG전자 · 삼성SDI · 한미반도체 · 알테오젠 · 에코프로 · 크래프톤 · 삼성바이오로직스 · 현대모비스 · LG화학 · SK이노베이션 · 삼성물산 · 신한지주 · 하나금융지주 · 메리츠금융지주 · 한국전력 · KT&G · 아모레퍼시픽 · 엔씨소프트 · 펄어비스 · 카카오뱅크 · 카카오페이 · HMM · 대한항공 · 롯데케미칼 · S-Oil · 고려아연 · 포스코퓨처엠 · LG디스플레이 · 삼성전기 · LG이노텍 · DB하이텍 · 리노공업 · 이오테크닉스 · 주성엔지니어링 · 원익IPS · 솔브레인 · 동진쎄미켐 · 테스 / 미국 AMD · AVGO · META · NFLX · CRM · ORCL · ADBE · INTC · MU · ASML · TSM · ARM · PLTR · COIN · SMCI · VRT · ANET · LRCX · AMAT · KLAC).
-  **풀에서 실제 보유 종목과 겹치는 이름은 실행 때 자동으로 뺀다**(아래 '새지 않게').
+  **표본(1차·2차 풀)은 실제 보유와 겹쳐도 빼지 않고 고정으로 쓴다**(10-10 결정). 실명→표본 1:1 배정은 비중 순이 아니라 **seed 20261010 으로 1차 표본 순서를 섞은 뒤** 배정한다("비중 1위 = 목록 첫 종목" 같은 대응이 생기지 않게). 겹쳐도 실제 행은 다른 표본 이름으로 바뀌어 드러나지 않는다(아래 '새지 않게').
 - 금액: 한국 총액 **₩10,000,000**(종목 ₩9,400,000 + 현금 ₩600,000) · 미국 **$8,000** · 코인 **₩1,000,000**. 3개월 곡선 +8%(출발 ₩9,260,000 → 끝 ₩10,000,000), 코스피 비교선 +5%, 미국 +6%, 코인 +12%. 1년·전체 구간도 같은 식(1년 +18%, 전체 +35%).
 - 배포: **GitHub Pages**(공개 리포 `happydyoon/pwm-showcase`, 주소 `https://happydyoon.github.io/pwm-showcase/`). Cloudflare Pages + `demo.seokhoyoon.com` 은 맥에 Cloudflare 토큰·node 가 없어 사람 손(대시보드 클릭)이 필요 → 나중에 석호님이 원하면 리포만 연결하면 된다(리포 구조는 그대로 쓸 수 있다).
 - 공개 리포에 올라가는 것: HTML 세 장 + quant.js/css + `data/*.json`(가짜) + 생성기. **실제 보유 목록·실제 API 응답·실명 사전은 절대 커밋하지 않는다**(생성기가 실행 때 라이브에서 읽고 메모리에서만 쓴다).
@@ -49,7 +49,7 @@ pwm-showcase/
    - **문장 교체**: 값이 문자열이고 **40자 넘으면 무조건** 풀 문장으로 바꾼다(키 이름이 `sentence|text|note|why|reason|reasons|thesis|claim|evidence|comment|summary|intro|meaning|history|detail|label` 이면 40자 이하라도 바꾼다 — 단 `label` 은 20자 넘을 때만). 풀은 키 이름별 5~8개 한국어 문장(`sentence`→"사이클: 살아 있음(엔진 초록 4/4) · 빠른 경고 0개 — 꺾이면 내 돈의 한국 62%가 맞는다 · 먼저 줄일 것: 레버리지 1종목 3%", `reasons`→"펀더멘털: 양호 · ROE 15%" 등 **원본과 같은 어투지만 표본 종목·가짜 숫자**). 날짜·코드·URL·색 이름(`green/red`)·국면 글자(`살아 있음`·`2차 후 하락`·등급 `A/B/경고/주의/양호`)·`kind/status/stance` 같은 짧은 분기값은 건드리지 않는다(화면 분기가 깨진다).
    - **시계열**: `series?range=*`(`points[].krw/stock/usd/coin.total/eval/cash/cost`)는 포인트 수·`t` 를 유지하고 값은 **목표 곡선**(선형 + sin 두 개 + 작은 결정적 노이즈)으로 통째로 다시 쓴다. `benchmark`·`grade_history`·`growth`·`cashflows`·`quant perf` 의 시계열도 같은 식(구간 수익률 위 숫자대로). `latest.ts/as_of_kst` 는 생성 시각.
    - **깊은 링크**: 문자열 값이 `/tenbagger`·`/forecast`·`/` 로 시작하는 `url`/`anchor` 류는 `./tenbagger.html…` 로.
-5. **새지 않게**(`build/check.py`, 생성기 끝에서도 호출): 라이브 `ranking.items`·`us_book`·코인·`tenbagger.candidates`·`holdings`·`forecast.scenarios[].tickers`·`rule_card items` 의 **실제 이름·코드 전부**를 메모리에 모아, `data/*.json`·`*.html`·`demo.js` 에 하나라도 남아 있으면 실패(0건이어야 통과). 표본 풀에 실제 이름이 있으면 그 이름을 풀에서 뺀 뒤 매핑한다. `100.67.98.100`·`8787`·`seokho`·`키움 계좌번호 패턴`(`\d{8}-\d{2}` 등)도 0건. 40자 넘는 문자열 중 풀에 없는 것 0건. `latest.krw.total` 이 ₩10,000,000 ±1%.
+5. **새지 않게**(`build/check.py`, 생성기 끝에서도 호출): 라이브 `ranking.items`·`us_book`·코인·`tenbagger.candidates`·`holdings`·`forecast.scenarios[].tickers`·`rule_card items` 의 **실제 이름·코드 전부**를 메모리에 모아, `data/*.json`·`*.html`·`demo.js` 에 하나라도 남아 있으면 실패(0건이어야 통과). 단 표본 사전(`build/samples.py`)의 이름·코드·심볼은 실명과 겹쳐도 예외로 둔다(표본은 고정 — 빼지 않는다). 표본 이름 안에 들어 있는 글자도 실명으로 세지 않는다. `100.67.98.100`·`8787`·`seokho`·`키움 계좌번호 패턴`(`\d{8}-\d{2}` 등)도 0건. 40자 넘는 문자열 중 풀에 없는 것 0건. `latest.krw.total` 이 ₩10,000,000 ±1%.
    **실명 목록은 어떤 파일에도 쓰지 않는다**(출력에도 개수만).
 6. **빠진 데이터 0**: Playwright 로 세 페이지를 열고 탭(한국·미국·코인)·구간 버튼·정렬 버튼·종목 행 클릭(상세)·퀀트 패널 펼치기·3층 묶음 전부 열기를 돌려 `DEMO missing` 경고가 **0** 이어야 한다. 콘솔 오류 0. "아직 계산 전"·"없음"·"—" 가 첫 화면·텐배거 1~2층·예측 1~2층에 없어야 한다(3층 안은 2곳까지 허용 — 보고에 적는다).
 7. **GitHub Pages**: `.nojekyll` 추가 → `gh repo create happydyoon/pwm-showcase --public --source . --push` → `gh api -X POST repos/happydyoon/pwm-showcase/pages -f build_type=legacy -f 'source[branch]=main' -f 'source[path]=/'` → 1~3분 뒤 `curl -sI https://happydyoon.github.io/pwm-showcase/` 가 200. (리포 만들기·푸시·Pages 켜기는 **맡긴 쪽이 한다** — 빌더는 로컬 `python3 -m http.server` 로 확인까지.)
@@ -72,3 +72,11 @@ pwm-showcase/
 - 실제 보유 이름 그대로 + 금액만 축소: 포트폴리오 구성이 공개된다(석호님 답 없음 → 표본).
 - 실제 AI 문장을 이름만 바꿔 싣기: 종목 근거가 드러난다(장부 3등급이어도) → 40자 넘는 문자열은 전부 풀 문장.
 - Cloudflare Pages 를 지금: 맥에 토큰·node 없음 → 사람 손 필요. GitHub Pages 는 `gh` 로 끝난다.
+- 겹치는 표본 제외 — 빠진 유명 종목이 곧 실제 보유라는 뜻이 돼 새는 길이 된다.
+
+## 남은 손질 (10-10 빌드 뒤, 지금은 그대로 둔다)
+
+- 코인 '시장 대비' 비교 대상 이름이 실제 대장 코인 대신 표본 코인 이름으로 나온다(비교 지수 이름도 실명 사전 치환을 받는다).
+- 시나리오 제목 하나("원전·…")에 들어 있던 종목 약자가 표본 약자로 바뀌어 "원전·ZS" 처럼 어색하게 보인다.
+- 2차 풀까지 다 쓴 미국 종목은 가상 이름 "Sample Holdings XX" 로 나온다(가설 장부 자동 후보·닷컴 사례 등 깊은 곳 몇 군데).
+- ~~미국 수익 원천 장부의 묶음 제목(실제 매매 일화 제목)은 그대로다~~ → 10-09 게시 전 수리: 묶음 이름·키를 「폭락장 역발상 매수 A/B」로, 종목별 '자료 없음' 사유를 일반 문구로, 원본 주석 속 일화 예시 삭제. `check.py` 에 '실제 매매 일화 흔적' 0건 검사 추가.
