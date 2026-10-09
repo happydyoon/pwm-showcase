@@ -1,0 +1,116 @@
+/* 🔬 퀀트 분석 섹션 + 데이터 신뢰도 배지 — index.html 의 변수(--panel·--line·--up…)를 그대로 쓴다 */
+
+/* 신뢰도 배지 (h1 옆) */
+.trust{margin-left:auto;background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  font:600 11.5px inherit;padding:4px 10px;border-radius:14px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;letter-spacing:0}
+.trust i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.trust.ok i{background:var(--up)} .trust.warn i{background:#f5a623} .trust.bad i{background:var(--down)}
+.trust.bad{border-color:rgba(255,91,69,.45);color:#ff8a78}
+.trustpop{border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  padding:10px 12px;margin:-8px 0 16px;font-size:12px}
+.trustpop table{width:100%;border-collapse:collapse}
+.trustpop td{padding:5px 4px;border-top:1px solid var(--line);vertical-align:top}
+.trustpop tr:first-child td{border-top:0}
+.trustpop .lv{width:14px}
+.trustpop .lv i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-top:4px}
+.trustpop .lv i.ok{background:var(--up)} .trustpop .lv i.warn{background:#f5a623}
+.trustpop .lv i.bad{background:var(--down)}
+.trustpop .nm{font-weight:600;white-space:nowrap}
+.trustpop .dt{color:var(--dim);font-variant-numeric:tabular-nums}
+.trustpop .af{color:var(--faint);font-size:10.5px}
+.trustpop .cap{color:var(--faint);font-size:10.5px;margin-top:6px}
+.trustbar{border:1px solid rgba(255,91,69,.4);background:rgba(255,91,69,.08);color:#ff8a78;
+  border-radius:10px;padding:8px 12px;font-size:12px;margin:-6px 0 16px;line-height:1.5}
+
+/* 퀀트 패널 — 접힌 채로 두고 펼칠 때만 계산을 부른다 */
+.qpanel{border:1px solid var(--line);border-radius:12px;margin:0 0 10px;background:var(--panel)}
+.qpanel>summary{cursor:pointer;list-style:none;padding:11px 14px;font-size:13px;font-weight:600;
+  display:flex;justify-content:space-between;align-items:center;gap:10px}
+.qpanel>summary::-webkit-details-marker{display:none}
+.qpanel>summary::before{content:'▸';color:var(--faint);margin-right:6px}
+.qpanel[open]>summary::before{content:'▾'}
+.qpanel>summary .t{flex:1}
+.qpanel>summary .h{font-size:11px;font-weight:500;color:var(--faint);text-align:right}
+.qbody{padding:2px 14px 14px;font-size:12.5px;line-height:1.55}
+.qbody .lead{font-size:13px;margin:4px 0 10px}
+.qbody .why{font-size:11px;color:var(--faint);margin:10px 0 0;line-height:1.55}
+.qbody h4{font-size:11.5px;color:var(--dim);margin:14px 0 6px;font-weight:600}
+.qbody table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.qbody th{font-size:10.5px;color:var(--faint);font-weight:500;text-align:right;padding:4px 6px}
+.qbody th:first-child,.qbody td:first-child{text-align:left}
+.qbody td{padding:5px 6px;border-top:1px solid var(--line);text-align:right;font-size:12px}
+.qbody td.thin,.qbody .thin{color:var(--faint)}
+.qbody .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:8px;
+  background:rgba(255,255,255,.07);color:var(--dim);margin-left:4px;font-weight:500}
+.qbody .tag.ok{background:rgba(0,200,5,.15);color:#38d24a}
+.qbody .tag.bad{background:rgba(255,91,69,.15);color:#ff6f5c}
+.qbody .tag.warn{background:rgba(245,166,35,.15);color:#f5a623}
+.qbody .loading,.qbody .err{color:var(--faint);font-size:12px;padding:8px 0}
+.qbody .err{color:#ff8a78}
+.qkpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:6px 0 10px}
+.qkpi .c{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.qkpi .k{font-size:10.5px;color:var(--faint)}
+.qkpi .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.qkpi .s{font-size:10.5px;color:var(--dim)}
+.qscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* 선 그래프(SVG) */
+.qchart{position:relative;margin:4px 0 2px}
+.qchart svg{width:100%;height:190px;display:block;overflow:visible}
+.qchart .lg{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--dim);margin:0 0 4px}
+.qchart .lg i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;
+  vertical-align:middle}
+.qchart .ax{font-size:10px;fill:var(--faint)}
+.qchart .tipq{position:absolute;pointer-events:none;background:#1c2229;border:1px solid var(--line);
+  border-radius:8px;padding:6px 9px;font-size:11.5px;white-space:nowrap;opacity:0;z-index:5;
+  font-variant-numeric:tabular-nums;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.qchart .tipq .row{display:flex;justify-content:space-between;gap:12px}
+
+/* 비중 vs 위험 막대 */
+.qbars .r{display:grid;grid-template-columns:minmax(90px,30%) 1fr 52px;gap:8px;align-items:center;
+  padding:3px 0;font-size:12px}
+.qbars .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qbars .b{position:relative;height:14px}
+.qbars .b i{position:absolute;left:0;height:6px;border-radius:3px}
+.qbars .b i.w{top:0;background:rgba(139,152,165,.55)}
+.qbars .b i.k{top:8px;background:var(--g2)}
+.qbars .b i.k.hot{background:var(--down)}
+.qbars .v{text-align:right;font-variant-numeric:tabular-nums;font-size:11.5px}
+
+/* 히트맵 */
+.qheat{border-collapse:separate;border-spacing:2px;width:100%}
+.qheat td{border:0!important;padding:0!important;height:22px;min-width:18px;text-align:center!important;
+  font-size:10px!important;border-radius:3px;color:rgba(255,255,255,.85)}
+.qheat td.nm{text-align:left!important;padding-right:8px!important;color:var(--fg);white-space:nowrap;
+  font-size:11.5px!important;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.qheat th{font-size:9.5px!important;padding:2px 0!important;text-align:center!important}
+
+/* 슬라이더(가상 충격) · What-if 입력 */
+.qslide{display:grid;grid-template-columns:110px 1fr 52px;gap:8px;align-items:center;
+  font-size:12px;margin:4px 0}
+.qslide input{width:100%}
+.qslide b{text-align:right;font-variant-numeric:tabular-nums}
+.qform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+.qform select,.qform input{background:var(--bg);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;padding:6px 8px;font:13px inherit;min-width:0}
+.qform input[type=number]{width:110px}
+.qform button{background:var(--g2);border:0;color:#fff;font:600 12.5px inherit;
+  padding:7px 12px;border-radius:8px;cursor:pointer}
+.qform button.ghost{background:none;border:1px solid var(--line);color:var(--dim)}
+.qlegs .leg{display:flex;gap:8px;align-items:center;font-size:12px;padding:4px 0;
+  border-top:1px solid var(--line)}
+.qlegs .leg button{background:none;border:0;color:var(--faint);cursor:pointer;font-size:14px}
+
+/* 캘린더 */
+.qcal .d{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.qcal .d .dt{color:var(--dim);font-variant-numeric:tabular-nums;font-size:11.5px}
+.qcal .e{font-size:12px;margin:1px 0}
+.qcal .e .x{font-size:10.5px;color:var(--faint)}
+.qcal .e.hold{font-weight:600}
+.qcal .e.est .x::after{content:' · 추정';color:#f5a623}
+
+@media(max-width:560px){
+  .qbars .r{grid-template-columns:84px 1fr 46px}
+  .qslide{grid-template-columns:90px 1fr 46px}
+}

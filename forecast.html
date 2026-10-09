@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<script src="./demo.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>[체험판] 예측 엔진</title>
+<style>
+:root{--bg:#0b0d10;--panel:#14181d;--line:#232a31;--fg:#e9edf2;--dim:#8b98a5;--faint:#5a6673;
+  --up:#00c805;--down:#ff5b45;--warn:#f5a623;--blue:#4c8dff;--vio:#c471f5}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",system-ui,sans-serif;
+  padding:16px 16px 56px;max-width:1000px;margin:0 auto}
+a{color:var(--blue);text-decoration:none}
+h1{font-size:20px;margin:4px 0 2px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h1 small{font-size:12px;font-weight:500;color:var(--faint)}
+h2{font-size:14px;color:var(--dim);margin:28px 0 10px;letter-spacing:.02em}
+.sub{color:var(--faint);font-size:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.big{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.bar{height:6px;background:#1c2229;border-radius:4px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--blue)}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;border:1px solid var(--line);color:var(--dim);margin:2px 3px 2px 0}
+.ok{color:var(--up)} .bad{color:var(--down)} .warn{color:var(--warn)} .dim{color:var(--dim)} .faint{color:var(--faint)}
+.q{border-top:1px solid var(--line);padding:10px 0}
+.q:first-child{border-top:0}
+.probs{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.p{font-size:12px;background:#1a1f25;border-radius:8px;padding:2px 7px;font-variant-numeric:tabular-nums}
+.p b{font-weight:700}
+.p.comb{background:#1d2a3f;color:#cfe0ff}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--faint);font-weight:500}
+td.n{text-align:right}
+details summary{cursor:pointer;color:var(--dim);font-size:13px}
+.why{font-size:12px;color:var(--dim);margin-top:4px}
+.empty{color:var(--faint);font-size:13px;padding:6px 0}
+.pill{font-size:11px;border-radius:9px;padding:1px 7px;background:#2a2112;color:var(--warn);white-space:nowrap}
+th{white-space:nowrap}
+.pill.on{background:#12301a;color:var(--up)}
+.note{font-size:12px;color:var(--faint);margin:6px 0 0}
+.pill.dim{background:#1c2229;color:var(--dim)}
+.tblwrap{overflow-x:auto}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}
+.dot.green{background:var(--up)}.dot.yellow{background:var(--warn)}.dot.red{background:var(--down)}
+.dot.gray{background:transparent;border:2px solid var(--faint)}
+/* 시나리오 표 — 한 줄씩, 행을 누르면 그 시나리오 카드가 아래 행에 펼쳐진다(텐배거 후보 표와 같은 방식) */
+tr.scen{cursor:pointer}
+tr.scen:hover td{background:#171c22}
+tr.scen td{vertical-align:middle}
+tr.detail > td{background:#10141a;padding:10px 8px}
+tr.detail .card{margin:0}
+.minibar{display:inline-block;width:46px;height:5px;background:#1c2229;border-radius:3px;overflow:hidden;vertical-align:middle;margin-left:6px}
+.minibar i{display:block;height:100%;background:var(--blue)}
+/* 1층 상태 4칸 — 폰(≤640px)에서는 2×2 (index.html #statusrow 복사, 이 페이지 색 변수로) */
+.statrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 10px}
+a.st{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:9px 12px;color:inherit;text-decoration:none;min-width:0;cursor:pointer}
+a.st:hover{border-color:#3a4550}
+.st .sk{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.st .sv{font-size:18px;font-weight:700;line-height:1.3;margin-top:3px;font-variant-numeric:tabular-nums;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st .sm{font-size:11px;color:var(--faint);line-height:1.35;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+@media(max-width:640px){ .statrow{grid-template-columns:repeat(2,minmax(0,1fr))} .st .sv{font-size:16px} }
+/* 2층 오늘 할 일 — 번호 붙인 줄 + 오른쪽 '보기' (index.html #changesec 복사) */
+.chg{border:1px solid #3a4550;border-radius:14px;padding:12px 16px;margin:0 0 4px;background:#161b21}
+.chead{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;font-size:15px}
+.chead .cbasis{margin-left:auto;text-align:right;color:var(--dim);font-size:12px}
+.clines{list-style:none;margin:6px 0 0;padding:0}
+.clines li{padding:6px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.5}
+.clines li.todo{display:flex;align-items:center;gap:10px}
+.clines .tnum{flex:0 0 auto;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:700;color:#0b0d10;background:var(--dim)}
+.clines .tnum.r{background:var(--down)} .clines .tnum.y{background:var(--warn)} .clines .tnum.g{background:var(--up)}
+.clines .ttext{flex:1 1 auto;min-width:0}
+.clines a.tgo{flex:0 0 auto;display:inline-block;font-size:12px;color:var(--dim);border:1px solid var(--line);
+  border-radius:8px;padding:2px 9px}
+.clines a.tgo:hover{color:var(--fg);border-color:#3a4550}
+.clines li.tnone{color:var(--dim);font-size:12.5px}
+/* 3층 — 근거 묶음. 각 묶음은 <details class="layer">, 첫 줄 <summary> = 제목 + 한 줄 요약 (index.html 복사) */
+details.layer{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+details.layer > summary.lsum{display:flex;align-items:baseline;gap:10px;cursor:pointer;list-style:none;
+  padding:4px 0;min-width:0}
+details.layer > summary.lsum::-webkit-details-marker{display:none}
+details.layer > summary.lsum::before{content:'▸';color:var(--faint);font-size:11px;flex:0 0 auto}
+details.layer[open] > summary.lsum::before{content:'▾'}
+details.layer[open] > summary.lsum{margin-bottom:12px}
+details.layer > summary.lsum:hover h2{color:var(--fg)}
+.layer h2{font-size:13px;font-weight:600;color:var(--dim);margin:0;flex:0 1 auto;min-width:0}
+.lsum .dg{margin-left:auto;font-size:12px;color:var(--dim);text-align:right;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto;font-variant-numeric:tabular-nums}
+.layer .lsub{font-size:12px;color:var(--faint);margin:-6px 0 8px}
+@media(max-width:640px){ .lsum .dg{font-size:11px} }
+</style>
+</head>
+<body>
+<h1>🔭 예측 엔진 <small><a href="./index.html">← 자산 대시보드</a> · <a href="./tenbagger.html">🎯 텐배거 →</a></small></h1>
+<div class="sub" id="asof">불러오는 중…</div>
+<div id="app"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct = v => v == null ? '—' : Math.round(v * 100) + '%';
+const F = {base:'과거', ai_bull:'AI강세', ai_bear:'AI약세', ai_base:'AI기저율', combined:'결합', human:'석호님', reference:'시장'};
+const T = {rel_perf:'상대 성과', earn_beat:'실적 대 기대', export:'수출', macro:'거시', kalshi:'예측시장',
+  rel_perf_long:'🗓 12개월 상대 성과', export_long:'🗓 12개월 수출', kalshi_long:'🗓 12개월 예측시장'};
+const MK = {KR:'🇰🇷', US:'🇺🇸', ADR:'🌐ADR', GLOBAL:'🌍'};
+
+let RED = {};   // 공시 경고 {코드: {mark, label, last, evidence}} — 스냅샷 red_flags.flags
+const redMark = code => RED[code] ? `<span title="${esc(RED[code].evidence)}">${RED[code].mark}</span> ` : '';
+
+function scenarioCard(s, ladderApproved) {
+  const b = s.belief;
+  const expo = Object.entries(s.exposure).map(([mk, e]) =>
+    `<div class="row"><span>${MK[mk] || mk} 내 비중 <b>${(e.share * 100).toFixed(1)}%</b></span>
+     <span class="faint">목표 ${Math.round(e.band[0]*100)}~${Math.round(e.band[1]*100)}% · ${esc(e.gap)}${ladderApproved ? '' : ' (초안)'}</span></div>
+     ${e.holdings.length ? `<div class="faint" style="font-size:12px">${e.holdings.map(esc).join(', ')}</div>` : ''}`).join('');
+  const dp = b.disproofs.length
+    ? `<div class="warn">⚠️ 반증: ${b.disproofs.map(esc).join(' / ')}</div>`
+    : `<div class="ok" style="font-size:13px">✅ 반증 조건 미해당</div>`;
+  const recent = s.recent.length ? s.recent.map(r =>
+    `<div style="font-size:12px">${r.good ? '<span class="ok">▲</span>' : '<span class="bad">▼</span>'} ${esc(r.text)} <span class="faint">(결합 ${pct(r.prob)})</span></div>`).join('')
+    : '<div class="empty">채점된 증거 아직 없음 — 첫 채점은 질문 마감 후</div>';
+  const C = {growth:'성장', gm_trend:'이익률Δ', surprise:'서프라이즈', revision:'추정치Δ', claims:'주장', ai:'AI'};
+  const fmt = (k, v) => v == null ? '—' : k === 'ai' ? pct(v) : k === 'claims' ? (v > 0 ? '+' : '') + v.toFixed(2)
+    : (v > 0 ? '+' : '') + (v * 100).toFixed(0) + '%';
+  const rk = (s.ranking || []).length ? `<details><summary>종목 순위 (${esc(s.ranking[0].month)} · 누가 더 유력한가)</summary>
+    <table><tr><th>#</th><th>종목</th><th class="n">점수</th><th class="n">내 비중</th><th></th></tr>
+    ${s.ranking.map(r => `<tr><td>${r.rank ?? '—'}</td><td>${MK[r.market] || ''} ${redMark(r.code)}${esc(r.name)}
+      <div class="faint" style="font-size:11px">${Object.keys(C).map(k => `${C[k]} ${fmt(k, r.comps[k])}`).join(' · ')}</div></td>
+      <td class="n">${r.score == null ? '—' : Math.round(r.score * 100)}</td><td class="n">${(r.weight * 100).toFixed(1)}%</td>
+      <td>${r.flag ? `<span class="pill">${esc(r.flag)}${r.ret_1y != null ? ' · 1년 ' + (r.ret_1y > 0 ? '+' : '') + Math.round(r.ret_1y * 100) + '%' : ''}</span>` : ''}</td></tr>`).join('')}</table>
+    <div class="note">점수 = 6항목의 시나리오 안 백분위 평균(0~100). 맞히는지 스스로 채점 중이라 참고용.</div></details>` : '';
+  return `<div class="card">
+    <div class="row"><b>${esc(s.name)}${s.option ? ' <span class="pill">옵션 · 상한 5%</span>' : ''}</b><span class="faint">열린 질문 ${s.open}</span></div>
+    <div class="row"><span class="big">${b.score}<span class="faint" style="font-size:16px">/5</span></span>
+      <span class="dim">증거 ${b.support} : ${b.against}${b.capped ? ' · 반증으로 상한' : ''}${b.n != null ? ` · 채점 ${b.n}개 · ${b.months || 0}개월치` : ''}${b.provisional ? ' <span class="pill" title="채점 30개 미만 또는 6개월 미만 — 표시만, 점수·목표 비중엔 영향 없음">잠정</span>' : ''}</span></div>
+    <div class="bar"><i style="width:${b.score * 20}%"></i></div>
+    ${dp}<div style="margin:8px 0">${expo}</div>
+    <details><summary>가설 · 반증 조건 · 종목</summary>
+      <div class="why">${esc(s.thesis)}</div>
+      <div class="why">반증: ${s.disproof_rules.map(esc).join(' / ')}</div>
+      <div style="margin-top:6px">${s.tickers.map(t => `<span class="tag">${MK[t.market] || ''} ${redMark(t.code)}${esc(t.name)}</span>`).join('')}</div>
+    </details>${rk}
+    <div style="margin-top:8px">${recent}</div></div>`;
+}
+
+function probsHtml(p) {
+  const order = ['base','ai_bull','ai_bear','ai_base','combined','reference','human'];
+  return order.filter(k => p[k] != null || (k === 'reference' && p.reference != null))
+    .map(k => `<span class="p ${k === 'combined' ? 'comb' : ''}">${F[k]} <b>${pct(p[k])}</b></span>`).join('');
+}
+
+// ── 신호등 3층(10-10): 1층 상태 4칸 · 시나리오 표 · 2층 오늘 할 일 · 3층 묶음 요약 — 모두 이미 받은 d 로만(새 fetch 없음) ──
+const flagsOf = d => Object.entries(((d.red_flags || {}).flags) || {});
+function stCell(id, go, key, o) {
+  return `<a class="st" id="${id}" href="#${go}" data-go="${go}" title="${esc(o.m || '')}"><div class="sk"><span class="dot ${o.dot || 'gray'}"></span>${key}</div>
+    <div class="sv ${o.dot === 'red' ? 'bad' : ''}">${o.v == null || o.v === '' ? '—' : esc(o.v)}</div><div class="sm">${o.m ? esc(o.m) : '&nbsp;'}</div></a>`;
+}
+function statusHtml(d) {
+  const v = d.verdict || {}, sc = d.scenarios || [], imp = v.improvement_vs_base;
+  // ① 판정 진척 — 채점 n/필요 · 과거 확률 대비 · 시장
+  const ver = v.need ? {v: `${v.n ?? 0}/${v.need}`, m: `과거 확률보다 ${imp == null ? '—' : Math.round(imp * 100) + '%'} 정확 · 시장 ${v.beats_reference ? '이김' : '아직'}${v.passing ? '' : ' · 관찰 모드'}`,
+    dot: v.passing ? 'green' : 'gray'} : {};
+  // ② 반증 경보 — 반증 조건이 켜진 시나리오 수
+  const dis = sc.filter(s => ((s.belief || {}).disproofs || []).length);
+  const alr = {v: `${dis.length}개`, m: dis.length ? dis.map(s => s.name).join(' · ') : '전부 미해당', dot: dis.length ? 'red' : 'green'};
+  // ③ 노출 어긋남(한국) — 목표 범위 대비 초과 · 부족 · 범위 안
+  const gk = g => sc.filter(s => ((s.exposure || {}).KR || {}).gap === g).length;
+  const a = gk('초과'), b = gk('부족'), c = gk('범위 안');
+  const exp = sc.length ? {v: `초과 ${a}`, m: `부족 ${b} · 범위 안 ${c} (한국)${d.ladder_approved ? '' : ' (사다리 초안)'}`, dot: a >= 1 ? 'yellow' : 'green'} : {};
+  // ④ 공시 경고 — 🚩 인수+메자닌 · ⚠️ 메자닌만
+  const fl = flagsOf(d), w = fl.filter(([, f]) => f.level === 'warn').length, cn = fl.filter(([, f]) => f.level !== 'warn').length;
+  const red = !d.red_flags ? {v: '수집 전'} : {v: `🚩 ${w}`, m: `⚠️ 메자닌만 ${cn}`, dot: w >= 1 ? 'red' : cn >= 1 ? 'yellow' : 'green'};
+  return `<div class="statrow" id="statusrow">${stCell('st-verdict', 'scen', '판정 진척', ver)}${stCell('st-alerts', 'alerts', '반증 경보', alr)}${stCell('st-expo', 'scen', '노출 어긋남', exp)}${stCell('st-redflags', 'redflags', '공시 경고', red)}</div>`;
+}
+
+// 시나리오 표 — 한 줄씩(믿음·반증·내 비중 vs 목표·열린 질문). 행을 누르면 기존 시나리오 카드가 아래 행에 펼쳐진다
+function scenTable(d) {
+  const GP = {'초과': '', '부족': 'dim', '범위 안': 'on'};
+  const expo = e => !e ? '<span class="faint">—</span>'
+    : `<b>${(e.share * 100).toFixed(1)}%</b> <span class="faint">/ 목표 ${Math.round(e.band[0] * 100)}~${Math.round(e.band[1] * 100)}%</span> <span class="pill ${GP[e.gap] ?? 'dim'}">${esc(e.gap)}</span>`;
+  const rows = (d.scenarios || []).map((s, i) => { const bl = s.belief || {}, ex = s.exposure || {};
+    return `<tr class="scen" data-i="${i}"><td style="min-width:8.5em"><b>${esc(s.name)}</b>${s.option ? ' <span class="pill">옵션</span>' : ''}</td>
+      <td style="white-space:nowrap"><b>${bl.score ?? '—'}</b><span class="faint">/5</span><span class="minibar"><i style="width:${(bl.score || 0) * 20}%"></i></span></td>
+      <td>${(bl.disproofs || []).length ? `<b class="bad">⚠️ ${bl.disproofs.length}</b>` : '<span class="ok">✅</span>'}</td>
+      <td style="white-space:nowrap">${expo(ex.KR)}</td><td style="white-space:nowrap">${expo(ex.US)}</td><td class="n">${s.open ?? '—'}</td></tr>
+      <tr class="detail" id="scen${i}" style="display:none"><td colspan="6">${scenarioCard(s, d.ladder_approved)}</td></tr>`; }).join('');
+  return `<div class="card" id="scen"><div class="row"><b>시나리오 믿음 · 내 노출</b><span class="faint">행을 누르면 카드</span></div>
+    <div class="tblwrap"><table><tr><th>시나리오</th><th>믿음</th><th>반증</th><th>🇰🇷 내 비중</th><th>🇺🇸 내 비중</th><th class="n">열린 질문</th></tr>${rows}</table></div></div>`;
+}
+
+function todoHtml(d) {
+  const t = [];   // {c: 'r'|'y'|'g', text, go} — 빨강(경보) → 노랑(버티기·공시·준비 후보) → 초록(활성 액션) 순
+  const holds = d.holds || [], alarm = holds.filter(x => x.kind !== 'hold'), hold = holds.filter(x => x.kind === 'hold');
+  alarm.forEach(x => t.push({c: 'r', text: x.text, go: 'alerts'}));
+  if (hold.length) t.push({c: 'y', text: `버티기 ${hold.length}종목 — ${hold.map(x => x.name).join(' · ')}`, go: 'alerts'});
+  const warn = flagsOf(d).filter(([, f]) => f.level === 'warn');
+  if (warn.length) t.push({c: 'y', text: `🚩 ${warn.map(([code, f]) => f.name || code).join(' · ')} — 공시 확인`, go: 'redflags'});
+  const acts = (d.actions || []).map(a => ({c: a.status === '활성' ? 'g' : 'y', text: `${MK[a.market] || ''} ${a.text} — 결합 ${pct(a.combined)} vs 시장 ${pct(a.reference)}`, go: 'actions'}));
+  t.push(...acts);
+  t.sort((p, q) => 'ryg'.indexOf(p.c) - 'ryg'.indexOf(q.c));
+  const lines = t.map((x, i) => `<li class="todo"><span class="tnum ${x.c}">${i + 1}</span><span class="ttext">${esc(x.text)}</span><a class="tgo" href="#${x.go}">보기</a></li>`);
+  if (!lines.length) lines.push('<li class="tnone">오늘 할 일 없음 — 관찰 모드</li>');
+  return `<div class="chg" id="todo" style="margin-top:12px"><div class="chead"><b>🔔 오늘 할 일</b><span class="cbasis">기준 ${esc(d.as_of || '')}</span></div><ul class="clines">${lines.join('')}</ul></div>`;
+}
+
+// 3층 묶음 제목 줄 — 제목 + 오른쪽 한 줄 요약(없으면 빈칸)
+const lsum = (title, id, dg) => `<summary class="lsum"><h2>${title}</h2><span class="dg" id="dg-${id}" title="${esc(dg || '')}">${esc(dg || '')}</span></summary>`;
+function digests(d) {
+  const holds = d.holds || [], rf = d.red_flags, fl = flagsOf(d), sc = d.scorecard || {}, cnt = d.counts || {};
+  const sb = Object.entries(sc).sort((a, b) => a[1].brier - b[1].brier)[0];
+  const scTxt = sc['결합'] ? `결합 ${sc['결합'].brier.toFixed(3)}${sc['시장 기대'] ? ` · 시장 ${sc['시장 기대'].brier.toFixed(3)}` : ''} · 채점 ${sc['결합'].n}`
+    : sb ? `${sb[0]} ${sb[1].brier.toFixed(3)} · 채점 ${sb[1].n}` : '채점 전';
+  const oq = d.open_questions || [], res = d.resolved || [], bn = d.bottlenecks || [];
+  return {
+    alerts: `경보 ${holds.filter(x => x.kind !== 'hold').length} · 버티기 ${holds.filter(x => x.kind === 'hold').length}`,
+    redflags: !rf ? '수집 전' : `🚩 ${fl.filter(([, f]) => f.level === 'warn').length} · ⚠️ ${fl.filter(([, f]) => f.level !== 'warn').length} · 확인 ${rf.checked ?? '—'}종목`,
+    actions: (d.actions || []).length ? `${d.actions.length}개` : '없음',
+    scorecard: scTxt,
+    openq: `${oq.length}개 · 유형 ${new Set(oq.map(q => q.template)).size}`,
+    resolved: `${res.length}개 · 예 ${res.filter(q => q.outcome === 1).length}`,
+    bottleneck: `주제 ${bn.length} · 먼저 말하는 구간 ${bn.filter(x => x.flag === '먼저 말하는 구간').length}`,
+    sources: `${(d.sources || []).length}곳`,
+    claims: `30일 ${cnt.claims_30d ?? '—'} / 누적 ${cnt.claims ?? '—'}`,
+  };
+}
+
+/* 접힌 <details> 안(또는 그 자체)이면 먼저 열고 스크롤 — 딥링크·1층 칸·2층 '보기' 공용 (index.html 복사) */
+function openUp(el){
+  for (let d = el && el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details'))
+    if (!d.open){ d.dataset.auto = '1'; d.open = true; }   // 자동으로 연 것은 기억(localStorage)하지 않는다
+}
+function revealEl(id, smooth){
+  const el = id && document.getElementById(id);
+  if (!el) return false;
+  openUp(el);
+  el.scrollIntoView({behavior: smooth ? 'smooth' : 'auto', block: 'start'});
+  return true;
+}
+/* 3층 묶음 — 열고 닫은 상태를 기억(localStorage pwm.open.fc.<id>, 브라우저별 편의 — 실패해도 무해). 캔버스가 없어 다시 그리기는 없다 */
+const LAYERS = ['alerts', 'redflags', 'actions', 'scorecard', 'openq', 'resolved', 'bottleneck', 'sources', 'claims'];
+function bindLayers(){
+  LAYERS.forEach(id => {
+    const el = document.getElementById(id); if (!el || el.tagName !== 'DETAILS') return;
+    try {
+      const v = localStorage.getItem('pwm.open.fc.' + id);
+      if (v === '1' || v === '0') el.open = v === '1';
+    } catch (e) {}
+    el.addEventListener('toggle', e => {
+      if (e.target !== el) return;                       // 안쪽 details(AI 근거·종목 순위 등)의 토글은 무시
+      if (el.dataset.auto) delete el.dataset.auto;       // 딥링크·1층 칸이 자동으로 연 것은 기억하지 않는다
+      else { try { localStorage.setItem('pwm.open.fc.' + id, el.open ? '1' : '0'); } catch (e2) {} }
+    });
+  });
+}
+// 페이지 안 '#…' 링크(1층 칸·보기) — 접힌 묶음을 먼저 열고 내려간다. 주소 끝도 맞춰 둔다
+$('#app').addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]'); if (!a) return;
+  e.preventDefault();
+  const id = a.getAttribute('href').slice(1);
+  if (revealEl(id, true)) { try { history.replaceState(null, '', '#' + id); } catch (e2) {} }
+});
+window.addEventListener('hashchange', () => revealEl(location.hash.slice(1), true));
+
+function render(d) {
+  if (d.error) { $('#asof').textContent = d.error; return; }
+  const v = d.verdict;
+  $('#asof').innerHTML = `${esc(d.as_of)} 기준 · 규칙 v${esc(d.rule_version)} · 판정일 ${esc(d.verdict_date)} · 파란 칩 = 첫 결합(채점용), '최신' 줄 = 매주 재예측`;
+  const rf = d.red_flags || null;
+  RED = (rf && rf.flags) || {};
+  const DG = digests(d);
+  // 순서: 1층 상태 4칸 → 시나리오 표(1층의 몸통) → 2층 오늘 할 일 → 3층 묶음(전부 기본 닫힘)
+  let h = statusHtml(d) + scenTable(d);
+  // 판정 진척 막대는 1층 ① 칸으로 옮겼다(채점 n/필요 · 과거 확률 대비 · 시장)
+  if (!d.ladder_approved) h += `<div class="note">목표 비중 사다리는 초안입니다(석호님 승인 전 — 참고용).</div>`;
+  if (d.ladder_scale && d.ladder_scale < 1) h += `<div class="note">시나리오 목표 합계가 100%를 넘어 모든 목표를 ×${d.ladder_scale.toFixed(2)}로 줄였습니다. ETF는 구성 비율대로 나눠 셉니다.</div>`;
+  const re = d.rank_eval || {};
+  const reTxt = Object.entries(re).filter(([k, x]) => x.n).map(([k, x]) => `${k} 순위상관 ${x.mean_ic >= 0 ? '+' : ''}${x.mean_ic.toFixed(2)} (${x.n})`);
+  h += `<div class="note">종목 순위 자기채점: ${reTxt.length ? reTxt.join(' · ') : '첫 채점은 기록 3개월 뒤'}</div>`;
+  h += todoHtml(d);
+  // 경보
+  h += `<details class="layer" id="alerts">${lsum('반증 · 버티기 경보', 'alerts', DG.alerts)}<div class="card">${d.holds.length ? d.holds.map(x =>
+      `<div class="q">${x.kind === 'hold' ? '🧭' : '⚠️'} ${esc(x.text)}</div>`).join('') : '<div class="empty">해당 없음</div>'}</div></details>`;
+  // 공시 경고 — 한국 보유 + 시나리오 한국 종목, 최근 1년 주요사항보고서
+  const reds = Object.entries(RED).sort((a, b) => (a[1].level !== 'warn') - (b[1].level !== 'warn') || (b[1].last > a[1].last ? 1 : -1));
+  const G = (rf && rf.guide) || null;
+  const lv = k => (G && G.levels[k]) || {};
+  h += `<details class="layer" id="redflags">${lsum('공시 경고', 'redflags', DG.redflags)}<div class="lsub">🚩 인수+메자닌 · ⚠️ 메자닌만</div><div class="card">${G ? `<div class="dim" style="font-size:13px">${esc(G.intro)}</div>` : ''}${!rf
+      ? '<div class="empty">아직 수집 전 — 다음 19:20 실행 후 생깁니다.</div>'
+      : reds.length ? reds.map(([code, f]) => `<div class="q"><div class="row"><span>${f.mark} <b>${esc(f.name || code)}</b> <span class="faint">${esc(code)}</span></span>
+         <span class="pill">${esc(f.label)} · 공시일 ${f.dates.map(esc).join(', ')}</span></div>
+         ${lv(f.level).meaning ? `<div class="why"><b>무슨 뜻</b> — ${esc(lv(f.level).meaning)}</div>
+         <div class="why"><b>근거</b> — ${esc(lv(f.level).history)}</div>` : `<div class="why">${esc(f.evidence)}</div>`}</div>`).join('')
+      : '<div class="empty">지금 걸린 종목 없음</div>'}
+    ${G ? `<details style="margin-top:8px"><summary>두 등급의 차이 · 공시에서 확인할 것</summary>
+      ${['warn', 'caution'].map(k => `<div class="why">${lv(k).mark} <b>${esc(lv(k).label)}</b> — ${esc(lv(k).meaning)}<br><span class="faint">${esc(lv(k).history)}</span></div>`).join('')}
+      <div class="why"><b>확인할 것</b><br>${G.check.map((c, i) => `${'①②③④⑤'[i]} ${esc(c)}`).join('<br>')}</div></details>` : ''}
+    ${rf ? `<div class="note">${esc(rf.as_of)} 기준 보유·시나리오 한국 종목 ${rf.checked}개 확인${rf.as_of !== d.as_of ? ' (이번 수집 실패 — 지난 결과)' : ''}${(rf.errors || []).length ? ' · ' + esc(rf.errors[0]) : ''}. 팔라는 신호가 아닙니다.</div>` : ''}</div></details>`;
+  // 액션 후보
+  h += `<details class="layer" id="actions">${lsum('액션 후보', 'actions', DG.actions)}<div class="lsub">결합 vs 시장 기대 15%p 이상</div><div class="card">${d.actions.length ? d.actions.map(a =>
+      `<div class="q"><div class="row"><span>${MK[a.market] || ''} ${esc(a.text)}</span>
+       <span class="pill ${a.status === '활성' ? 'on' : ''}">${esc(a.status)}</span></div>
+       <div class="why">결합 ${pct(a.combined)} vs 시장 ${pct(a.reference)} (차이 ${(a.edge*100).toFixed(0)}%p) · ${esc(a.gate)} · 마감 ${esc(a.due)}</div></div>`).join('')
+      : '<div class="empty">없음</div>'}</div></details>`;
+  // 성적표
+  const sc = Object.entries(d.scorecard).sort((a, b) => a[1].brier - b[1].brier);
+  h += `<details class="layer" id="scorecard">${lsum('예측 성적표', 'scorecard', DG.scorecard)}<div class="lsub">Brier — 낮을수록 정확, 0.25 = 항상 50%</div><div class="card">${sc.length ? `<table>
+    <tr><th>예측자</th><th class="n">채점</th><th class="n">Brier</th><th>질문 유형별</th></tr>
+    ${sc.map(([k, x]) => `<tr><td>${esc(k)}</td><td class="n">${x.n}</td><td class="n"><b>${x.brier.toFixed(3)}</b></td>
+      <td class="faint" style="font-size:12px">${Object.entries(x.by_template).map(([t, y]) => `${T[t] || t} ${y.brier.toFixed(2)}(${y.n})`).join(' · ')}</td></tr>`).join('')}
+    </table>` : '<div class="empty">아직 채점된 질문이 없습니다 — 가장 빠른 마감은 1개월 뒤.</div>'}
+    ${d.calibration.length ? `<details style="margin-top:8px"><summary>보정도 — "70%라 한 것이 실제 70% 일어났나"</summary><table>
+      <tr><th>구간</th><th class="n">개수</th><th class="n">평균 예측</th><th class="n">실제</th></tr>
+      ${d.calibration.map(c => `<tr><td>${c.bin}</td><td class="n">${c.n}</td><td class="n">${pct(c.mean_p)}</td><td class="n">${pct(c.freq)}</td></tr>`).join('')}</table></details>` : ''}</div>`;
+  const scl = Object.entries(d.scorecard_long || {}).sort((a, b) => a[1].brier - b[1].brier);
+  h += `<div style="margin:14px 0 8px;font-size:13px;color:var(--dim)"><b>🗓 12개월 트랙 성적</b> <span class="faint">(참고 — 판정에는 안 들어감)</span></div><div class="card">${scl.length ? `<table>
+    <tr><th>예측자</th><th class="n">채점</th><th class="n">Brier</th></tr>
+    ${scl.map(([k, x]) => `<tr><td>${esc(k)}</td><td class="n">${x.n}</td><td class="n"><b>${x.brier.toFixed(3)}</b></td></tr>`).join('')}</table>`
+    : '<div class="empty">첫 채점은 1년 뒤(2027년 가을).</div>'}</div></details>`;
+  // 열린 질문 — 396개를 다 그린다(묶음이 닫혀 있으면 안 보이고, 열면 Ctrl+F 로 찾을 수 있다)
+  const groups = {};
+  d.open_questions.forEach(q => (groups[q.template] = groups[q.template] || []).push(q));
+  h += `<details class="layer" id="openq">${lsum('열린 질문', 'openq', DG.openq)}`;
+  h += Object.entries(groups).map(([t, qs]) => `<div class="card"><b>${T[t] || t}</b> <span class="faint">${qs.length}개</span>
+    ${qs.map(q => `<div class="q"><div>${MK[q.market] || ''} ${esc(q.text)}</div>
+      <div class="faint" style="font-size:12px">마감 ${esc(q.due)}</div>
+      <div class="probs">${probsHtml({...q.probs, reference: q.reference})}</div>
+      ${q.latest && Object.keys(q.latest).length ? `<div class="probs"><span class="p faint">최신 ${esc(q.latest_date)}</span>${
+        ['ai_bull','ai_bear','ai_base','combined'].filter(k => q.latest[k] != null).map(k =>
+          `<span class="p ${k === 'combined' ? 'comb' : ''}">${F[k]} <b>${pct(q.latest[k])}</b></span>`).join('')}</div>` : ''}
+      ${Object.keys(q.why).length ? `<details><summary>AI 근거</summary>${Object.entries(q.why).map(([k, w]) => `<div class="why">${F[k]}: ${esc(w)}</div>`).join('')}</details>` : ''}
+    </div>`).join('')}</div>`).join('') || '<div class="card empty">아직 질문이 없습니다.</div>';
+  h += '</details>';
+  // 최근 채점
+  h += `<details class="layer" id="resolved">${lsum('최근 채점', 'resolved', DG.resolved)}<div class="card">${d.resolved.length ? d.resolved.map(q =>
+    `<div class="q">${q.outcome === 1 ? '<span class="ok">예</span>' : '<span class="bad">아니오</span>'} ${esc(q.text)}
+     <div class="probs">${probsHtml(q.probs)}</div></div>`).join('') : '<div class="empty">아직 없음</div>'}</div></details>`;
+  // 병목 지도
+  h += `<details class="layer" id="bottleneck">${lsum('병목 지도', 'bottleneck', DG.bottleneck)}<div class="lsub">최근 30일 주장</div><div class="card">${d.bottlenecks.length ? `<table>
+    <tr><th>주제</th><th class="n">언급</th><th class="n">전달</th><th class="n">전문가</th><th class="n">대중 비중</th><th></th></tr>
+    ${d.bottlenecks.map(x => `<tr><td>${esc(x.theme)}<div class="faint" style="font-size:11px">${esc(x.sample)}</div></td>
+      <td class="n">${x.n}</td><td class="n">${x.prev_n}</td><td class="n">${x.expert_sources}곳</td><td class="n">${pct(x.crowd_share)}</td>
+      <td>${x.flag ? `<span class="pill ${x.flag === '먼저 말하는 구간' ? 'on' : ''}">${esc(x.flag)}</span>` : ''}</td></tr>`).join('')}</table>`
+    : '<div class="empty">주장이 쌓이면 나타납니다.</div>'}
+    <div class="note">군중 온도계(대중 채널 강세 비율): ${Object.entries(d.thermometer).map(([k, t]) =>
+      `${esc((d.scenarios.find(s => s.id === k) || {}).name || k)} ${t.bull == null ? '—' : pct(t.bull)} (${t.n})`).join(' · ')}</div></div></details>`;
+  // 출처 성적
+  h += `<details class="layer" id="sources">${lsum('출처 성적', 'sources', DG.sources)}<div class="lsub">축소 적중률 — 표본 적으면 50% 쪽</div><div class="card">${d.sources.length ? `<table>
+    <tr><th>출처</th><th>등급</th><th class="n">주장</th><th class="n">채점</th><th class="n">적중률</th></tr>
+    ${d.sources.map(s => `<tr><td>${esc(s.name)}${s.muted ? ' 🔇' : ''}</td><td>${esc(s.tier)}</td><td class="n">${s.claims}</td>
+      <td class="n">${s.n}</td><td class="n">${pct(s.shrunk)}</td></tr>`).join('')}</table>` : '<div class="empty">아직 없음</div>'}</div></details>`;
+  // 주장 원장
+  h += `<details class="layer" id="claims">${lsum('주장 원장', 'claims', DG.claims)}<div class="lsub">최근 30일 · ${d.counts.claims_30d}개 / 누적 ${d.counts.claims}개</div><div class="card">${d.claims.length ? d.claims.map(c =>
+    `<div class="q"><div>${c.direction === 'up' ? '▲' : c.direction === 'down' ? '▼' : '·'} ${esc(c.claim)}</div>
+     <div class="faint" style="font-size:12px">${esc(c.source)} (${esc(c.tier)}) · ${esc(c.date)} · ${esc(c.theme)} · 기한 ${esc(c.due)}${c.status === 'resolved' ? (c.outcome ? ' · <span class="ok">적중</span>' : ' · <span class="bad">빗나감</span>') : ''}</div></div>`).join('')
+    : '<div class="empty">아직 없음</div>'}</div></details>`;
+  $('#app').innerHTML = h;
+  bindLayers();
+  // 시나리오 표 — 행을 누르면 그 시나리오 카드(가설·반증·종목 순위·최근 증거)가 아래 행에 펼쳐진다
+  document.querySelectorAll('tr.scen').forEach(tr => tr.addEventListener('click', () => {
+    const el = document.getElementById('scen' + tr.dataset.i);
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+  }));
+  // 주소 끝 '#alerts' 등 — 화면이 그려진 뒤 연 다음 내려간다
+  if (location.hash.length > 1) revealEl(location.hash.slice(1), false);
+}
+fetch('/api/forecast').then(r => r.json()).then(render).catch(e => { $('#asof').textContent = '불러오기 실패: ' + e; });
+</script>
+</body>
+</html>
